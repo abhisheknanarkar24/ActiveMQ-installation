@@ -1,0 +1,59 @@
+#####################################################################################
+# Date            Version            Change
+# 13/05/2019      2.0.1              Created (current)
+#####################################################################################
+---
+
+- hosts: "{{ hosts }}"
+  vars:
+    jetty_port: "{{ lookup('ini', 'JETTY_PORT section={{ section }} file={{ configFile }}') }}"
+    activemq_port: "{{ lookup('ini', 'ACTIVEMQ_PORT section={{ section }} file={{ configFile }}') }}"
+    ws_connector_port: "{{ lookup('ini', 'WS_CONNECTOR_PORT section={{ section }} file={{ configFile }}') }}"
+    mqtt_connector_port: "{{ lookup('ini', 'MQTT_CONNECTOR_PORT section={{ section }} file={{ configFile }}') }}"
+    stomp_connector_port: "{{ lookup('ini', 'STOMP_CONNECTOR_PORT section={{ section }} file={{ configFile }}') }}"
+    amqp_connector_port: "{{ lookup('ini', 'AMQP_CONNECTOR_PORT section={{ section }} file={{ configFile }}') }}"
+    activemq_version: "{{ lookup('ini', 'ACTIVEMQ_VERSION section=Common_Settings file={{ configFile }}') }}"
+    activemq_install_dir: "{{ lookup('ini', 'CONNECT_APPS_LIN section=Common_Settings file={{ configFile }}') }}/{{ lookup('ini', 'ACTIVEMQ_INSTALL_DIR section=Common_Settings file={{ configFile }}') }}-{{ activemq_version }}-{{ activemq_port }}"
+    activemq_xml: "{{ activemq_install_dir }}/conf/activemq.xml"
+    jetty_xml: "{{ activemq_install_dir }}/conf/jetty.xml"
+    wrapper_conf: "{{ activemq_install_dir }}/bin/linux-x86-64/wrapper.conf"
+    activemq_service_name: "{{ lookup('ini', 'ACTIVEMQ_SERVICE_NAME section={{ section }} file={{ configFile }}') | lower }}"
+    activemq_data_dir: "{{ lookup('ini', 'ACTIVEMQ_DATA_DIR section={{ section }} file={{ configFile }}') }}"
+  tasks:
+ 
+    - name: Replace ports in activemq.xml
+      replace: 
+        path: "{{ activemq_xml }}"
+        regexp: "{{ item.port }}"
+        replace: "{{ item.replace }}"
+      with_items:
+        - { port: 'tcp\:\/\/0.0.0.0:61616', replace: 'tcp://0.0.0.0:{{ activemq_port }}' } 
+        - { port: 'amqp\:\/\/0.0.0.0:5672', replace: 'amqp://0.0.0.0:{{ amqp_connector_port }}' }
+        - { port: 'stomp\:\/\/0.0.0.0:61613', replace: 'stomp://0.0.0.0:{{ stomp_connector_port }}' }
+        - { port: 'mqtt\:\/\/0.0.0.0:1883', replace: 'mqtt://0.0.0.0:{{ mqtt_connector_port }}' }
+        - { port: 'ws\:\/\/0.0.0.0:61614', replace: 'ws://0.0.0.0:{{ ws_connector_port }}' }
+
+    - name: Replace jetty port
+      replace:
+        path: "{{ jetty_xml }}"
+        regexp: 'value=\"8161\"'
+        replace: 'value="{{ jetty_port }}"'   
+      tags: jetty
+
+    - name: Update wrapper.conf
+      replace: 
+        path: "{{ wrapper_conf }}"
+        regexp: "{{ item.regex }}"
+        replace: "{{ item.replace }}"
+      with_items:
+        - { regex: '(wrapper.console.title=.*)', replace: 'wrapper.console.title={{ activemq_service_name }}' } 
+        - { regex: '(wrapper.ntservice.name=.*)', replace: 'wrapper.ntservice.name={{ activemq_service_name }}' } 
+        - { regex: '(wrapper.ntservice.displayname=.*)', replace: 'wrapper.ntservice.displayname={{ activemq_service_name }}' } 
+        - { regex: '(wrapper.ntservice.description=.*)', replace: 'wrapper.ntservice.description=ActiveMQ service for {{ activemq_service_name }}' } 
+      tags: wrapper
+
+    - name: Update data directory in {{ activemq_xml }}
+      replace: 
+        path: "{{ activemq_xml }}"
+        regexp: '(kahaDB directory=).*(\/>)'
+        replace: "\\g<1>\"{{ activemq_data_dir }}\"\\g<2>"

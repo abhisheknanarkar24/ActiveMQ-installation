@@ -1,0 +1,29 @@
+#####################################################################################
+# Date            Version            Change
+# 13/05/2019      2.0.1              Created (current)
+#####################################################################################
+---
+
+- hosts: "{{ hosts }}"
+  vars:
+    software_dir: "{{ lookup('ini', 'CONNECT_SOFTWARE_LIN section=Common_Settings file={{ configFile }}') }}"
+    activemq_tar: "{{ lookup('ini', 'ACTIVEMQ_TAR section=Common_Settings file={{ configFile }}') }}"
+    activemq_port: "{{ lookup('ini', 'ACTIVEMQ_PORT section={{ section }} file={{ configFile }}') }}"
+    activemq_version: "{{ lookup('ini', 'ACTIVEMQ_VERSION section=Common_Settings file={{ configFile }}') }}"
+    activemq_install_dir: "{{ lookup('ini', 'CONNECT_APPS_LIN section=Common_Settings file={{ configFile }}') }}/{{ lookup('ini', 'ACTIVEMQ_INSTALL_DIR section=Common_Settings file={{ configFile }}') }}-{{ activemq_version }}-{{ activemq_port }}"
+  tasks:
+    
+    - name: Create "{{ activemq_install_dir }}" directory
+      file:
+        path: "{{ activemq_install_dir }}"
+        state: directory
+
+    - name: Unzip activemq
+#      unarchive:
+#        src: "{{ software_dir }}/{{ activemq_tar }}"
+#        dest: "{{ activemq_install_dir }}"
+#        extra_opts: [--strip-components=1]
+#        remote_src: yes
+      command: 'tar -xvf {{ software_dir }}/{{ activemq_tar }} --strip-components=1 -C {{ activemq_install_dir }}'
+
+

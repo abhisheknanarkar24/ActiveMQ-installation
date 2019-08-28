@@ -1,0 +1,30 @@
+#####################################################################################
+# Date            Version            Change
+# 13/05/2019      2.0.1              Created (current)
+#####################################################################################
+---
+
+- import_playbook: verifyServices_ubuntu.yml
+  vars:
+    hosts: "{{ hosts }}"
+    service_name: "{{ lookup('ini', 'ACTIVEMQ_SERVICE_NAME section={{ section }} file={{ configFile }}') | lower }}"
+
+- import_playbook: copyActiveMQ_ubuntu.yml
+  when: ( output.stderr.find("could not be") != -1 ) or ( output.stdout.find("dead") != -1 )
+  tags:
+    - copy
+
+- import_playbook: unzipActiveMQ_ubuntu.yml
+  when: ( output.stderr.find("could not be") != -1 ) or ( output.stdout.find("dead") != -1 )
+  tags:
+    - unzip
+
+- import_playbook: regexToActiveMQ_ubuntu.yml
+  when: ( output.stderr.find("could not be") != -1 ) or ( output.stdout.find("dead") != -1 ) 
+  tags:
+    - regex
+
+- import_playbook: installActiveMQService_ubuntu.yml
+  when: ( output.stderr.find("could not be") != -1 ) or ( output.stdout.find("dead") != -1 )
+  tags:
+    - install

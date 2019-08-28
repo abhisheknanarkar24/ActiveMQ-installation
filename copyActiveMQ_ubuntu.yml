@@ -1,0 +1,12 @@
+#####################################################################################
+# Date            Version            Change
+# 13/05/2019      2.0.1              Created (current)
+#####################################################################################
+---
+
+# Copying ActiveMQ zip (passing src & dest to a generic script copyFiles.yml)
+- import_playbook: copyFiles_ubuntu.yml
+  vars:
+    src_dir: "{{ lookup('ini', 'SOFTWARE_SOURCE section=Common_Settings file={{ configFile }}') }}/ActiveMQ/{{ lookup('ini', 'ACTIVEMQ_TAR section=Common_Settings file={{ configFile }}') }}"
+    dest_dir: "{{ lookup('ini', 'CONNECT_SOFTWARE_LIN section=Common_Settings file={{ configFile }}') }}/"
+    hosts: "{{ hosts }}"
