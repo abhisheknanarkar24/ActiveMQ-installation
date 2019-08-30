@@ -1,0 +1,31 @@
+#####################################################################################
+# Date            Version            Change
+# 13/05/2019      2.0.1              Created (current)
+#####################################################################################
+---
+
+- hosts: "{{ hosts }}"
+  vars: 
+    service_name:
+    service_status:
+  tasks:
+    - name: Verify if service exist
+      shell: systemctl status "{{ service_name }}"
+      register: output
+      ignore_errors: true
+
+    - name: Checking "{{ service_name }}" service is Running
+      debug:
+        msg: "'{{ service_name }}' service is RUNNING"
+      when: output.stdout.find("running") != -1
+
+    - name: Checking  "{{ service_name }}" service is not available
+      debug:
+        msg: "The specified service does not exist as an installed service"
+      when: output.stderr.find("could not be") != -1
+
+    - name: Checking  "{{ service_name }}" service is STOPPED
+      debug:
+        msg: "The specified service is STOPPED"
+      when: output.stdout.find("dead") != -1
+
